@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>审核通过</title>
+    <base href="/">
+    <link rel="stylesheet" href="static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="static/css/public.css" media="all">
+    <script src="static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+    <script src="/static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+</head>
+<body>
+<div class="layui-form">
+    <form id="addForm" class="layui-form layui-form-pane">
+        <div class="layui-form-item layui-form-text">
+            <div lay-filter="myDiv">
+                <label class="layui-form-label">备注</label>
+                <div class="layui-input-block">
+                    <textarea id="remark" name="remark" class="layui-textarea" lay-verify="required" style="min-height: 200px" cols="140" rows="6"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block" style="margin-left: 0;text-align: center;">
+                <button id="subbtn" class="layui-btn layui-btn-normal" lay-submit lay-filter="saveBtn" style="width: 120px;">确认</button>
+            </div>
+        </div>
+    </form>
+</div>
+</body>
+<script th:inline="javascript" type="text/javascript">
+    let submitUrl;
+    let remark;
+    $(function (){
+        let auditType=[[${auditType}]];
+        let auditId=[[${auditId}]]
+        console.log(auditId);
+        console.log(auditType);
+        if(auditType==="'courseAudit'"){ //课程通过
+            submitUrl='/auditCause/addCourseAuditRemark';
+        }else if(auditType==="'articleAudit'"){  //文章通过
+            submitUrl='/auditCause/addArticleAuditRemark';
+        }else if(auditType==="'resourceAudit'"){  //资料通过
+            submitUrl='/auditCause/addResourceAuditRemark';
+        }else if(auditType==="'specialAudit'"){  //特训班通过
+            submitUrl='/auditCause/addSpecialAuditRemark';
+        }
+
+        $('#addForm').submit(function (e){
+            $('#subbtn').attr("disabled","true");
+            let formData=new FormData(this);
+            remark=formData.get("remark");
+            console.log("submitUrl="+submitUrl);
+            $.ajax({
+                type:"post",
+                url:submitUrl,
+                data:{auditId:auditId,
+                    remark:remark,
+                    auditState:1},
+                success:function (res){
+                    if(res.code===200){
+                        layer.msg(res.message,{time:5000,icon:1,offset:[15]});
+                        let index=parent.layer.getFrameIndex(window.name);
+                        setTimeout(function (){
+                            window.parent.location.reload();//刷新父页面
+                            parent.layer.close(index);
+                        },1500);
+                    }else{
+                        layer.msg(res.message,{time:5000,icon:1,offset:[15]});
+                    }
+                },
+                error:function (error){
+                    $('#subbtn').attr("disabled","false");
+                    layer.msg(error,{time:5000,icon:2,offset:[15]})
+                }
+            })
+            e.preventDefault();
+        })
+    })
+</script>
+</html>

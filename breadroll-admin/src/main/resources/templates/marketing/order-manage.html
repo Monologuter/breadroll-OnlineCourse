@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>订单管理</title>
+    <link rel="stylesheet" href="/static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="/static/css/public.css" media="all">
+    <script src="/static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+</head>
+<body>
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="table-search-fieldset">
+            <legend>搜索信息</legend>
+            <div id="searchForm" style="margin: 10px 10px 10px 10px">
+                <form class="layui-form layui-form-pane" action="">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">订单日期</label>
+                            <div class="layui-input-inline">
+                                <input type="text" id="createTime" name="createTime" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-primary"  lay-submit lay-filter="search"><i class="layui-icon"></i> 搜 索</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+    </div>
+</div>
+</body>
+<script src="/static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+<script th:inline="none">
+    let documentWidth = $(document).width();
+    let myTable;
+    layui.use(['form', 'table','laydate'], function () {
+        let $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            laydate = layui.laydate;
+
+        //常规用法
+        laydate.render({
+            elem: '#createTime'
+        });
+
+        myTable = table.render({
+            elem: '#currentTableId',
+            url: '/orderInfo/pageList',
+            method: "get",
+            toolbar: '#toolbarDemo',
+            parseData: function (res) {
+                return {
+                    "code": 0,
+                    "msg": res.message,
+                    "count": res.data.total,
+                    "data": res.data.list
+                }
+            },
+            defaultToolbar: ['filter', 'exports', 'print', {
+                title: '提示',
+                layEvent: 'LAYTABLE_TIPS',
+                icon: 'layui-icon-tips'
+            }],
+            cols: [[
+                {field: 'orderNo', width: documentWidth*230/1000, title: '订单编号', align:"center"},
+                {field: 'orderName', width: documentWidth*180/1000, title: '订单名称', align:"center"},
+                {field: 'userId', width: documentWidth*80/1000, title: '用户编号',hide: true,sort: true, align:"center"},
+                {field: 'userAccount', width: documentWidth*130/1000, title: '用户帐号',sort: true, align:"center"},
+                {field: 'userName',width: documentWidth*80/1000,title: '用户名称',hide: true,sort: true,align: "center" },
+                {field: 'courseId',width:documentWidth*80/1000,title: '课程编号',hide: true, sort: true, align:"center"},
+                {field: 'courseName',width:documentWidth*130/1000,title: '课程名称', sort: true, align:"center"},
+                {field: 'payPrice',width:documentWidth*70/1000,title: '支付价格', sort: true, align:"center"},
+                {field: 'createTime',width:documentWidth*150/1000,title: '创建时间', sort: true, align:"center"},
+                {field: 'orderState',title: '订单状态', sort: true, align:"center"},
+            ]],
+            page: { //支持传入 laypage 组件的所有参数（某些参数除外，如：jump/elem） - 详见文档
+                layout: ['limit', 'count', 'prev', 'page', 'next', 'skip'] //自定义分页布局
+                , curr: 1 //设定初始在第 1 页
+                , limit: 10
+                , limits: [10, 15, 30, 60]
+                , groups: 5 //只显示 1 个连续页码
+                , first: true //不显示首页
+                , last: true //不显示尾页
+            },
+            request: {
+                pageName: "pageNum",
+                limitName: "pageSize"
+            },
+        });
+
+
+        //搜索
+        form.on('submit(search)', function(data){
+            console.log("搜索");
+            myTable.reload({
+                url:"/orderInfo/searchOrder",
+                method: "post",
+                page: {
+                    curr: 1 //设定初始在第 5 页
+                    ,limit: 10
+                },
+                request:{
+                    pageName:"pageNum",
+                    limitName: "pageSize"
+                },
+                where:{
+                    createTime:data.field.createTime
+                },
+            });
+            return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+        });
+
+    });
+</script>
+</html>

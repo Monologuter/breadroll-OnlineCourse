@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>编辑VIP</title>
+    <link rel="stylesheet" href="../static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="../static/css/public.css" media="all">
+    <script src="/static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+    <script src="/static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+</head>
+<style>
+    #subbtn{
+        margin-top: 25px;
+        margin-left: -110px;
+    }
+</style>
+<body>
+<div class="layui-form">
+    <form id="addform" class="layui-form layui-form-pane">
+        <input type="hidden" id="vipId" name="vipId">
+        <div class="layui-form-item">
+            <div lay-filter="myDiv" style="margin-top: 20px">
+                <label class="layui-form-label" style="background-color:rgb(240,238,251)">会员名称</label>
+                <div class="layui-input-block">
+                    <input id="vipName" name="vipName" lay-verify="required" type="text" class="layui-input">
+                </div>
+            </div>
+            <div lay-filter="myDiv" style="margin-top: 20px">
+                <label class="layui-form-label" style="background-color:rgb(240,238,251)">会员介绍</label>
+                <div class="layui-input-block">
+                    <input id="vipMark" name="vipMark" lay-verify="required" type="text" class="layui-input">
+                </div>
+            </div>
+            <div lay-filter="myDiv" style="margin-top: 20px">
+                <label class="layui-form-label" style="background-color:rgb(240,238,251)">会员图标</label>
+                <div class="layui-input-block">
+                    <input id="vipIcon" name="vipIcon" lay-verify="required" type="text" class="layui-input">
+                </div>
+            </div>
+            <div lay-filter="myDiv" style="margin-top: 20px">
+                <label class="layui-form-label" style="background-color:rgb(240,238,251)">会员价格</label>
+                <div class="layui-input-block">
+                    <input id="price" name="price" lay-verify="required" type="text" class="layui-input">
+                </div>
+            </div>
+            <div lay-filter="myDiv" style="margin-top: 20px">
+                <label class="layui-form-label" style="background-color:rgb(240,238,251)">会员时长</label>
+                <div class="layui-input-block">
+                    <input id="timeLength" name="timeLength" lay-verify="required" type="text" class="layui-input">
+                </div>
+            </div>
+            <div lay-filter="myDiv" style="margin-top: 20px;">
+                <label class="layui-form-label" style="background-color:rgb(240,238,251)">所赠花卷币</label>
+                <div class="layui-input-block">
+                    <input id="breadCoin" name="breadCoin" lay-verify="required" type="text" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn layui-btn-normal" id="subbtn" lay-submit lay-filter="saveBtn"></button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+<script th:inline="javascript" type="text/javascript">
+    let data={
+        vipId:null,
+        vipName:null,
+        vipMark:null,
+        vipIcon:null,
+        price:null,
+        timeLength:null,
+        breadCoin:null
+    }
+    $(function () {
+        let vip = [[${vip}]];
+        if (vip === null) {
+            $('#subbtn').html("确认添加");
+            submitUrl = "/vip/addVIP";
+        } else {
+            $('#vipId').val(vip.vipId);
+            $('#vipName').val(vip.vipName);
+            $('#vipMark').val(vip.vipMark);
+            $('#vipIcon').val(vip.vipIcon);
+            $('#price').val(vip.price);
+            $('#timeLength').val(vip.timeLength);
+            $('#breadCoin').val(vip.breadCoin);
+            $('#subbtn').html("确认修改");
+            submitUrl = "/vip/editVIP";
+        }
+
+        layui.form.render(); //重新渲染显示效果
+
+        //提交表单
+        $('#addform').submit(function (e){
+            let formData=new FormData(this);
+            data.vipId=formData.get("vipId");
+            data.vipName=formData.get("vipName");
+            data.vipMark=formData.get("vipMark");
+            data.vipIcon=formData.get("vipIcon");
+            data.price=formData.get("price");
+            data.timeLength=formData.get("timeLength");
+            data.breadCoin=formData.get("breadCoin");
+            $.ajax({
+                type:"post",
+                url:submitUrl,
+                data:data,
+                success:function (res){
+                    if(res.code===200){
+                        layer.msg(res.message,{time:5000,icon:1,offset:[15]});
+                        let index=parent.layer.getFrameIndex(window.name);
+                        setTimeout(function (){
+                            window.parent.location.reload();//刷新父页面
+                            parent.layer.close(index);
+                        },1500);
+                    }else{
+                        layer.msg(res.message,{time:5000,icon:1,offset:[15]});
+                    }
+                },
+                error:function (error){
+                    layer.msg(error,{time:5000,icon:2,offset:[15]})
+                }
+            })
+
+            e.preventDefault();
+        })
+
+    });
+</script>
+</body>
+</html>

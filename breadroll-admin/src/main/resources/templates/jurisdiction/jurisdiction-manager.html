@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>角色管理</title>
+    <link rel="stylesheet" href="/static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="/static/css/public.css" media="all">
+</head>
+<body>
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="table-search-fieldset">
+            <form id="searchForm" class="layui-form layui-form-pane" action="">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">角色ID</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="roleId" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">角色名称</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="roleName" autocomplete="off" class="layui-input"/>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <button id="sub" class="layui-btn layui-btn-primary"  lay-submit lay-filter="search"><i class="layui-icon"></i> 搜 索</button>
+                    </div>
+                </div>
+            </form>
+        </fieldset>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+
+        <script type="text/html" id="currentTableBar">
+            <a class="layui-btn layui-btn-normal layui-btn-sm data-count-edit" lay-event="edit">编辑信息</a>
+        </script>
+        <script type="text/html" id="roleState">
+            <!-- 这里的 checked 的状态只是演示 -->
+            <input type="checkbox" name="roleState" value="{{d.roleState}}" lay-skin="switch" lay-text="启用|禁用" lay-event="roleState" {{ d.roleState ? 'checked' : '' }}>
+        </script>
+    </div>
+</div>
+<script src="/static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+<script src="/static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+<script th:inline="none">
+    let documentWidth = $(document).width();
+    let myTable;
+    layui.use(['form', 'table'], function () {
+        let $ = layui.jquery,
+            form = layui.form,
+            table = layui.table;
+
+        myTable = table.render({
+            elem: '#currentTableId',
+            url: '/role/pageList',
+            method: "get",
+            toolbar: '#toolbarDemo',
+            parseData: function (res) {
+                return {
+                    "code": 0,
+                    "msg": res.message,
+                    "count": res.data.total,
+                    "data": res.data.list
+                }
+            },
+            defaultToolbar: ['filter', 'exports', 'print', {
+                title: '提示',
+                layEvent: 'LAYTABLE_TIPS',
+                icon: 'layui-icon-tips'
+            }],
+            cols: [[
+                {field: 'roleId', width: documentWidth*80/1000, title: '编号', sort: true, align: "center"},
+                {field: 'roleName', width: documentWidth*130/1000, title: '角色名称', align: "center"},
+                {field: 'roleUrl', width: documentWidth*160/1000, title: '权限路径', align: "center"},
+                {field: 'roleDescribe', width: documentWidth*200/1000, title: '角色描述', align: "center"},
+                {field: 'addTime', width: documentWidth*180/1000, title: '添加时间', sort: true, align: "center"},
+                {
+                    field: 'roleState',
+                    width: documentWidth*100/1000,
+                    title: '角色状态',
+                    templet: '#roleState',
+                    event: "roleState",
+                    unresize: true,
+                    sort: true,
+                    align: "center"
+                },
+                {title: '操作', toolbar: '#currentTableBar', align: "center"},
+            ]]
+            , page: { //支持传入 laypage 组件的所有参数（某些参数除外，如：jump/elem） - 详见文档
+                layout: ['limit', 'count', 'prev', 'page', 'next', 'skip'] //自定义分页布局
+                , curr: 1 //设定初始在第 5 页
+                , limit: 10
+                , limits: [5, 10, 15]
+                , groups: 5 //只显示 1 个连续页码
+                , first: true //不显示首页
+                , last: true //不显示尾页
+            },
+            request: {
+                pageName: "pageNum",
+                limitName: "pageSize"
+            },
+        });
+
+        //搜索
+        form.on('submit(search)', function(data){
+            myTable.reload({
+                url:"/role/searchRole",
+                method: "post",
+                page: {
+                    curr: 1 //设定初始在第 5 页
+                    ,limit: 10
+                },
+                request:{
+                    pageName:"pageNum",
+                    limitName: "pageSize"
+                },
+                where:{
+                    roleId:data.field.roleId,
+                    roleName:data.field.roleName,
+                },
+            });
+            return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+        });
+
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            let data = obj.data;
+            //编辑数据
+            if (obj.event === 'edit') {
+                let index = layer.open({
+                    title: '角色信息',
+                    type: 2,
+                    shade: 0.2,
+                    maxmin:true,
+                    shadeClose: true,
+                    area: ['600px', '400px'],
+                    content: '/role/goToEditRole?roleId='+data.roleId
+                });
+                $(window).on("resize", function () {
+                    layer.full(index);
+                });
+                return false;
+            } else if (obj.event === 'roleState') {
+                $.ajax({
+                    type: "get",
+                    url: '/role/editRoleState?roleId='+data.roleId,
+                    data: {roleId: data.roleId},
+                    success: function () {
+                        if (!data.roleState) {
+                            layer.msg(data.roleName + "角色已启用");
+                        } else {
+                            layer.msg(data.roleName + "角色已被禁用");
+                        }
+                        myTable.reload({
+                            url: "/role/pageList",
+                            method: "get",
+                            page: {
+                                curr: 1 //设定初始在第 5 页
+                                , limit: 10
+                            },
+                            request: {
+                                pageName: "pageNum",
+                                limitName: "pageSize"
+                            }
+                        })
+                    },
+                    error: function (error) {
+                        layer.msg(error, {time: 5000, icon: 2, offset: [15]})
+                    }
+                })
+            }
+        });
+    });
+</script>
+</body>
+</html>

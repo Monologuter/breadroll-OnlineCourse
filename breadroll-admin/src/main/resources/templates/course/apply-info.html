@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>报名信息</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <base href="/">
+    <link rel="stylesheet" href="/static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="/static/css/public.css" media="all">
+</head>
+<body>
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+        <script type="text/html" id="currentTableBar">
+            {{# if(d.applyState===1){}}
+                <a class="layui-btn layui-btn-sm layui-btn-normal" lay-event="drop">同意退课</a>
+                <a class="layui-btn layui-btn-sm layui-btn-warm" lay-event="refuse">拒绝退课</a>
+            {{#}}}
+        </script>
+        <script type="text/html" id="applyState">
+            {{# if(d.applyState===0){}}
+                 <span style="color:green;">报名成功</span>
+            {{#} else if(d.applyState === 1){ }}
+                <span style="color: red">申请退课</span>
+            {{#}else if(d.applyState === 2){ }}
+                <span style="color: green">退课成功</span>
+            {{#}else if(d.applyState === 3){ }}
+                <span style="color: red">拒绝退课</span>
+            {{#}else{ }}
+                <span style="color: red">已开课</span>
+            {{#}}}
+        </script>
+    </div>
+</div>
+<script src="/static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+<script th:inline="none">
+        let myTable;
+        layui.use(['form', 'table'], function () {
+            let $ = layui.jquery,
+            form = layui.form,
+            table = layui.table;
+
+            myTable = table.render({
+                elem: '#currentTableId',
+                url: '/special/apply/list',
+                method: "get",
+                toolbar: '#toolbarDemo',
+                parseData: function (res) {
+                    console.log(res);
+                    return {
+                        "code": 0,
+                        "msg": res.message,
+                        "count": res.data.total,
+                        "data": res.data.list
+                    }
+                },
+                defaultToolbar: ['filter', 'exports', 'print', {
+                    title: '提示',
+                    layEvent: 'LAYTABLE_TIPS',
+                    icon: 'layui-icon-tips'
+                }],
+                cols: [[
+                    {field: 'coachId', width: "8%", title: '报名编号', align: "center"},
+                    {field: 'courseId', width: "8%", title: '课程编号', align: "center"},
+                    {field: 'courseName', width: "16%", title: '课程名称', align: "center"},
+                    {field: 'userId',width: "8%",title: '用户编号',hide:true, align: "center"},
+                    {field: 'userName', width: "10%", title: '用户姓名', align: "center"},
+                    {field: 'userPhone', width: "12%", title: '用户电话', align: "center"},
+                    {field: 'userEmail', title: '用户邮箱', width: "14%", align: "center"},
+                    {field: 'applyState', title: '申请状态', width: "10%",templet:'#applyState',event:"applyState", unresize: true, align: "center"},
+                    {field: 'applyState',title: '操作', toolbar: '#currentTableBar', align: "center"}
+                ]],
+                page: { //支持传入 laypage 组件的所有参数（某些参数除外，如：jump/elem） - 详见文档
+                    layout: ['limit', 'count', 'prev', 'page', 'next', 'skip'] //自定义分页布局
+                    , curr: 1 //设定初始在第 5 页
+                    , limit: 10
+                    , limits: [10, 15, 30]
+                    , groups: 5 //只显示 1 个连续页码
+                    , first: true //不显示首页
+                    , last: true //不显示尾页
+                },
+                request: {
+                    pageName: "pageNum",
+                    limitName: "pageSize"
+                },
+                done:function (){
+                    $("table").css("width","100%");
+                }
+            });
+
+            table.on('tool(currentTableFilter)', function (obj) {
+                let data = obj.data;
+                 if(obj.event==='drop') {
+                     if(data.applyState!==1){
+                         layer.msg("不符合操作", {time: 5000, icon: 1, offset: [15]});
+                         return false;
+                     }
+                     $.ajax({
+                         type: "get",
+                         url: '/special/apply/changeApply',
+                         data: {coachId: data.coachId},
+                         success: function (res) {
+                             let order = res.data;
+                             console.log(data);
+                             if (res.code===200) {
+                                 $.ajax({
+                                     type: "post",
+                                     url: '/alipay/refund',
+                                     data: {orderNo: res.data.orderNo,
+                                        payPrice: res.data.payPrice
+                                     },
+                                     success: function (res){
+                                         layer.open({
+                                             title: '操作成功'
+                                             ,content: '《'+data.courseName+'》退课成功，共退款'+order.payPrice+'元',
+                                             icon:1
+                                         });
+                                     },
+                                     error: function (error) {
+                                         layer.open({
+                                             title: '操作失败'
+                                             ,content: data.courseName+'退课成功，但退款失败',
+                                             icon:2
+                                         });
+                                     }
+                                 });
+                             }
+                             myTable.reload({
+                                 url: "/special/apply/list",
+                                 method: "get",
+                                 page: {
+                                     curr: 1 //设定初始在第 5 页
+                                     , limit: 10
+                                 },
+                                 request: {
+                                     pageName: "pageNum",
+                                     limitName: "pageSize"
+                                 }
+                             })
+                         },
+                         error: function (error) {
+                             layer.msg(error, {time: 5000, icon: 2, offset: [15]})
+                         }
+                     });
+                 }else if(obj.event==='refuse'){
+                     if(data.applyState!==1){
+                         layer.msg("不符合操作", {time: 5000, icon: 1, offset: [15]});
+                         return false;
+                     }
+                     $.ajax({
+                         type: "post",
+                         url: '/special/apply/refuseApply',
+                         data: {coachId: data.coachId},
+                         success: function (res) {
+                             if (res.code===200) {
+                                 layer.open({
+                                     title: '操作成功'
+                                     ,content: data.courseName+'已拒绝退课',
+                                     icon:1
+                                 });
+                             }
+                             myTable.reload({
+                                 url: "/special/apply/list",
+                                 method: "get",
+                                 page: {
+                                     curr: 1 //设定初始在第 5 页
+                                     , limit: 10
+                                 },
+                                 request: {
+                                     pageName: "pageNum",
+                                     limitName: "pageSize"
+                                 }
+                             })
+                         },
+                         error: function (error) {
+                             layer.msg(error, {time: 5000, icon: 2, offset: [15]})
+                         }
+                     });
+                 }
+                 layui.table.render(); //重新渲染显示效果
+            });
+        });
+</script>
+</body>
+</html>

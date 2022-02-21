@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>轮播图管理</title>
+    <link rel="stylesheet" href="/static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="/static/css/public.css" media="all">
+    <script src="/static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+</head>
+<style>
+    #coverImg{
+        height: 250px;
+        width: 800px;
+        display: none;
+    }
+</style>
+<body>
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-normal data-add-btn" lay-event="add"> 添加 </button>
+            </div>
+        </script>
+
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+        <img class="layui-upload-img"  id="coverImg" alt="课程封面" src="">
+        <script type="text/html" id="currentTableBar">
+            <a class="layui-btn layui-btn-warm layui-btn-sm data-count-edit" lay-event="lookCover">查看图片</a>
+            <a class="layui-btn layui-btn-normal layui-btn-sm data-count-edit" lay-event="edit">编辑信息</a>
+            <a class="layui-btn layui-btn-sm layui-btn-danger data-count-delete" lay-event="delete">移除图片</a>
+        </script>
+        <script type="text/html" id="bannerState">
+            <!-- 这里的 checked 的状态只是演示 -->
+            <input type="checkbox" name="bannerState" value="{{d.bannerState}}" lay-skin="switch" lay-text="启用|禁用" lay-event="bannerState" {{ d.bannerState ? 'checked' : '' }}>
+        </script>
+    </div>
+</div>
+<script src="/static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+<script th:inline="none">
+    let documentWidth = $(document).width();
+    let myTable;
+    layui.use(['form', 'table'], function () {
+        let $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+
+        myTable = table.render({
+            elem: '#currentTableId',
+            url: '/banner/pageList',
+            method: "get",
+            toolbar: '#toolbarDemo',
+            parseData: function (res) {
+                return {
+                    "code": 0,
+                    "msg": res.message,
+                    "count": res.data.total,
+                    "data": res.data.list
+                }
+            },
+            defaultToolbar: ['filter', 'exports', 'print', {
+                title: '提示',
+                layEvent: 'LAYTABLE_TIPS',
+                icon: 'layui-icon-tips'
+            }],
+            cols: [[
+                {field: 'bannerId', width: documentWidth*120/1000, title: '轮播图编号', sort: true, align: "center"},
+                {field: 'courseName', width: documentWidth*400/1000, title: '课程名称', align: "center"},
+                {field: 'bannerState', width: documentWidth*120/1000, title: '启用状态', templet: '#bannerState', event: "bannerState", unresize: true, align: "center"},
+                {title: '操作', toolbar: '#currentTableBar', align: "center"},
+            ]],
+            page: { //支持传入 laypage 组件的所有参数（某些参数除外，如：jump/elem） - 详见文档
+                layout: ['limit', 'count', 'prev', 'page', 'next', 'skip'] //自定义分页布局
+                , curr: 1 //设定初始在第 1 页
+                , limit: 10
+                , limits: [10, 15, 30, 60]
+                , groups: 5 //只显示 1 个连续页码
+                , first: true //不显示首页
+                , last: true //不显示尾页
+            },
+            request: {
+                pageName: "pageNum",
+                limitName: "pageSize"
+            },
+        });
+
+        /**
+         * toolbar监听事件
+         */
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            if (obj.event === 'add') {  // 监听添加操作
+                let index = layer.open({
+                    title: '添加课程',
+                    type: 2,
+                    shade: 0.2,
+                    maxmin:true,
+                    shadeClose: true,
+                    area: ['100%', '100%'],
+                    content: '/banner/goToEditBanner?bannerId=0'
+                });
+                $(window).on("resize", function () {
+                    layer.full(index);
+                });
+            } else if (obj.event === 'delete') {  // 监听删除操作
+                let checkStatus = table.checkStatus('currentTableId'),
+                    data = checkStatus.data;
+                layer.alert(JSON.stringify(data));
+            }
+        });
+
+
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            let data = obj.data;
+            //编辑数据
+            if (obj.event === 'edit') {
+                let index = layer.open({
+                    title: '编辑课程',
+                    type: 2,
+                    shade: 0.2,
+                    maxmin:true,
+                    shadeClose: true,
+                    area: ['100%', '100%'],
+                    content: '/banner/goToEditBanner?bannerId='+data.bannerId
+                });
+                $(window).on("resize", function () {
+                    layer.full(index);
+                });
+                return false;
+                //删除数据
+            } else if (obj.event === 'delete') {
+                layer.confirm('真的删除《'+data.courseName+'》轮播图信息吗？',{icon:3}, function (index) {
+                    $.ajax({
+                        type: "get",
+                        url: '/banner/deleteBanner',
+                        data: {bannerId: data.bannerId},
+                        success: function (res) {
+                            if (res.code === 200) {
+                                layer.msg(res.message, {time: 5000, icon: 1, offset: [15]});
+
+                            } else {
+                                layer.msg(res.message, {time: 5000, icon: 1, offset: [15]});
+                            }
+                        },
+                        error: function (error) {
+                            layer.msg(error, {time: 5000, icon: 2, offset: [15]})
+                        }
+                    })
+                    obj.del();
+                    layer.close(index);
+                });
+            }else if (obj.event === 'bannerState') {
+                $.ajax({
+                    type: "get",
+                    url: '/banner/updateBannerState',
+                    data: {bannerId: data.bannerId},
+                    success: function (res) {
+                        layer.msg(res.message);
+                        myTable.reload({
+                            url: "/banner/pageList",
+                            method: "get",
+                            page: {
+                                curr: 1 //设定初始在第 5 页
+                                , limit: 10
+                            },
+                            request: {
+                                pageName: "pageNum",
+                                limitName: "pageSize"
+                            }
+                        })
+                    },
+                    error: function (error) {
+                        layer.msg(error, {time: 5000, icon: 2, offset: [15]})
+                    }
+                });
+            }else if(obj.event === 'lookCover'){
+                $('#coverImg').attr('src',data.bannerUrl);
+                layer.open({
+                    type: 1,
+                    title: false,
+                    closeBtn: 1,
+                    area: ['auto'],
+                    skin: 'layui-layer-nobg', //没有背景色
+                    shadeClose: true,
+                    content: $('#coverImg'),
+                    end:function(){
+                        $('#coverImg').css("display","none");
+                    }
+                });
+            }
+        });
+    });
+</script>
+</body>
+</html>

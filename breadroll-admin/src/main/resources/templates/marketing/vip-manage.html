@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>VIP管理</title>
+    <link rel="stylesheet" href="/static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="/static/css/public.css" media="all">
+    <script src="/static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+</head>
+<body>
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-normal data-add-btn" lay-event="add"> 添加 </button>
+            </div>
+        </script>
+
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+
+        <script type="text/html" id="currentTableBar">
+            <a class="layui-btn layui-btn-normal layui-btn-sm data-count-edit" lay-event="edit">编辑</a>
+            <a class="layui-btn layui-btn-sm layui-btn-danger data-count-delete" lay-event="delete">删除</a>
+        </script>
+        <script type="text/html" id="vipState">
+            <!-- 这里的 checked 的状态只是演示 -->
+            <input type="checkbox" name="vipState" value="{{d.vipState}}" lay-skin="switch" lay-text="启用|禁用" lay-event="vipState" {{ d.vipState ? 'checked' : '' }}>
+        </script>
+
+        <script type="text/html" id="timeLength">
+            {{# if(d.timeLength===-1){ }}
+            <span>永久</span>
+            {{# }else { }}
+            <span>{{= d.timeLength}}天</span>
+            {{# }  }}
+        </script>
+
+    </div>
+</div>
+</body>
+<script src="/static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+<script th:inline="none">
+    let documentWidth = $(document).width();
+    let myTable;
+    layui.use(['form', 'table','laydate'], function () {
+        let $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            laydate = layui.laydate;
+
+        //常规用法
+        laydate.render({
+            elem: '#publishTime'
+        });
+
+        myTable = table.render({
+            elem: '#currentTableId',
+            url: '/vip/pageList',
+            method: "get",
+            toolbar: '#toolbarDemo',
+            parseData: function (res) {
+                return {
+                    "code": 0,
+                    "msg": res.message,
+                    "count": res.data.total,
+                    "data": res.data.list
+                }
+            },
+            defaultToolbar: ['filter', 'exports', 'print', {
+                title: '提示',
+                layEvent: 'LAYTABLE_TIPS',
+                icon: 'layui-icon-tips'
+            }],
+            cols: [[
+                {field: 'vipId', width: documentWidth*80/1000, title: '会员编号', sort: true, align: "center"},
+                {field: 'vipName', width: documentWidth*120/1000, title: '会员名称', align: "center"},
+                {field: 'vipMark', width: documentWidth*180/1000, title: '会员介绍', align: "center"},
+                {field: 'price', width: documentWidth*100/1000, title: '会员价格', sort: true, align: "center"},
+                {field: 'timeLength',width: documentWidth*100/1000,title: '会员时长',templet: '#timeLength', align: "center"},
+                {field: 'breadCoin', width: documentWidth*100/1000, title: '所赠花卷币', sort: true, align: "center"},
+                {field: 'vipState', width: documentWidth*100/1000, title: '启用状态',templet:'#vipState',event:"vipState", unresize: true, align: "center"},
+                {title: '操作', toolbar: '#currentTableBar', align: "center"},
+            ]],
+            page: { //支持传入 laypage 组件的所有参数（某些参数除外，如：jump/elem） - 详见文档
+                layout: ['limit', 'count', 'prev', 'page', 'next', 'skip'] //自定义分页布局
+                , curr: 1 //设定初始在第 1 页
+                , limit: 10
+                , limits: [10, 15, 30, 60]
+                , groups: 5 //只显示 1 个连续页码
+                , first: true //不显示首页
+                , last: true //不显示尾页
+            },
+            request: {
+                pageName: "pageNum",
+                limitName: "pageSize"
+            },
+        });
+
+        /**
+         * toolbar监听事件
+         */
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            if (obj.event === 'add') {  // 监听添加操作
+                let index = layer.open({
+                    title: '添加VIP',
+                    type: 2,
+                    shade: 0.2,
+                    maxmin:true,
+                    shadeClose: true,
+                    area: ['100%', '100%'],
+                    content: '/vip/goToEditVip?vipId=0'
+                });
+                $(window).on("resize", function () {
+                    layer.full(index);
+                });
+            } else if (obj.event === 'delete') {  // 监听删除操作
+                let checkStatus = table.checkStatus('currentTableId'),
+                    data = checkStatus.data;
+                layer.alert(JSON.stringify(data));
+            }
+        });
+
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            let data = obj.data;
+            //编辑数据
+            if (obj.event === 'edit') {
+                let index = layer.open({
+                    title: '编辑公告',
+                    type: 2,
+                    shade: 0.2,
+                    maxmin: true,
+                    shadeClose: true,
+                    area: ['100%', '100%'],
+                    content: '/vip/goToEditVip?vipId=0' + data.vipId
+                });
+                $(window).on("resize", function () {
+                    layer.full(index);
+                });
+                return false;
+                //删除数据
+            } else if (obj.event === 'delete') {
+                layer.confirm('真的删除 ' + data.vipName + ' 吗？',{icon:3}, function (index) {
+                    $.ajax({
+                        type: "get",
+                        url: '/vip/deleteVip',
+                        data: {vipId:data.vipId},
+                        success: function (res) {
+                            if (res.code === 200) {
+                                layer.msg(res.message, {time: 5000, icon: 1, offset: [15]});
+
+                            } else {
+                                layer.msg(res.message, {time: 5000, icon: 1, offset: [15]});
+                            }
+                        },
+                        error: function (error) {
+                            layer.msg(error, {time: 5000, icon: 2, offset: [15]})
+                        }
+                    })
+                    obj.del();
+                    layer.close(index);
+                });
+            }else if(obj.event === 'vipState'){
+                $.ajax({
+                    type: "get",
+                    url: '/vip/updateVipState',
+                    data: {vipId: data.vipId},
+                    success: function () {
+                        if(!data.vipState){
+                            layer.msg(data.vipName+"已上架");
+                        }else{
+                            layer.msg(data.vipName+"已被下架");
+                        }
+                        myTable.reload({
+                            url:"/vip/pageList",
+                            method: "get",
+                            page: {
+                                curr: 1 //设定初始在第 5 页
+                                ,limit: 10
+                            },
+                            request:{
+                                pageName:"pageNum",
+                                limitName: "pageSize"
+                            }
+                        })
+                    },
+                    error: function (error) {
+                        layer.msg(error, {time: 5000, icon: 2, offset: [15]})
+                    }
+                })
+                layui.table.render(); //重新渲染显示效果
+            }
+        });
+    });
+</script>
+</html>

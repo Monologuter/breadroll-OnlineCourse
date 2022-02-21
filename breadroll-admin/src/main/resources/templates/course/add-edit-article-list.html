@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>编辑文章</title>
+    <base href="/">
+    <link rel="stylesheet" href="static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="static/css/public.css" media="all">
+    <link rel="stylesheet" href="static/lib/editormd/css/editormd.css" />
+    <script src="static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+    <script src="static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+    <script src="static/lib/editormd/editormd.min.js"></script>
+</head>
+<style>
+    #coverImg{
+        height: 250px;
+        width: 450px;
+        display: none;
+    }
+    #lookCover{
+        display: none;
+    }
+    #subbtn{
+        margin-left: -110px;
+    }
+    #reprintDIV{
+        display: none;
+    }
+</style>
+<body>
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <div class="layui-form">
+            <form id="addForm" class="layui-form ayui-form-pane">
+                <input type="hidden" id="articleId" name="articleId"/>
+                <div class="layui-form-item" style="margin-top: 50px">
+                    <label class="layui-form-label" style="text-align: left;background-color:rgb(240,238,251)">文章标题</label>
+                    <div class="layui-input-block">
+                        <input id="articleTitle" name="articleTitle"  lay-verify="required" type="text" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text" >
+                    <label class="layui-form-label layui-input-inline" style="text-align: left;padding:9px 0; background-color:rgb(240,238,251);width: 100%"><span style="margin-left: 15px;">文章内容</span></label>
+                    <div id="test-editor" class="layui-input-block">
+                        <textarea lay-verify="required"  id="text" name="text" style="display:none;"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item" lay-filter="myDiv">
+                    <div lay-filter="myDiv">
+                        <label class="layui-form-label" style="text-align: left;background-color:rgb(240,238,251)">文章类别</label>
+                        <div class="layui-input-block">
+                            <select id="typeName" name="typeName" lay-filter="mySelect" lay-verify="required">
+                                <option value="">请选择文章类型</option>
+                                <option th:each="courseType : ${courseTypes}" th:value="${courseType.typeName}" th:text="${courseType.typeName}"></option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label" style="text-align: left;background-color:rgb(240,238,251);margin-right: 15px">文章封面</label>
+                    <div class="layui-upload">
+                        <button type="button" class="layui-btn" id="uploadImg">上传图片</button>
+                        <button type="button" class="layui-btn layui-btn-normal" id="lookCover">查看封面</button>
+                        <img class="layui-upload-img"  id="coverImg" alt="课程封面" src="">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label" style="text-align: left;background-color:rgb(240,238,251);margin-right: 15px">是否转载</label>
+                    <div class="layui-input-block">
+                        <input type="checkbox" id="reprintState" name="reprintState" title="转载">
+                    </div>
+                </div>
+                <div id="reprintDIV" class="layui-form-item" style="margin-top: 10px">
+                    <label class="layui-form-label" style="text-align: left;background-color:rgb(240,238,251)">转载链接</label>
+                    <div class="layui-input-block">
+                        <input id="reprintUrl" name="reprintUrl" type="text" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                        <button id="subbtn" style="margin-top: 20px" class="layui-btn layui-btn-normal" lay-submit lay-filter="saveBtn">发布</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+<script th:inline="javascript" type="text/javascript">
+    let data={
+        articleId:null,
+        articleTitle: null,
+        text:null,
+        coverUrl: null,
+        typeName:null,
+        reprintUrl:null
+    }
+    let url;        //添加/修改封面路径
+    let imgUrl;     //讲师头像路径
+    layui.use(['form','element','upload', 'layer'],function (){
+        let $ = layui.jquery
+            , upload = layui.upload
+            , layer = layui.layer
+            ,form=layui.form;
+        form.on('checkbox',function (data){
+            if(data.elem.checked){
+                $('#reprintDIV').css("display","inline");
+            }else{
+                $('#reprintDIV').css("display","none");
+            }
+        })
+
+
+        //常规使用 - 普通图片上传
+        let uploadInst = upload.render({
+            elem: '#uploadImg', url: '/upload/article', //改成您自己的上传接口
+            before: function (e) {
+                layer.msg('上传中', {icon: 16, time: 0});
+            },
+            done: function (res) {
+                //如果上传失败
+                if (res.code ===200) {
+                    url = res.data.url;
+                    imgUrl=res.data.url;
+                    $('#coverImg').attr('src', url); //图片链接
+                    $('#lookCover').css("display","inline");
+                    $('#lookCover').click();
+                    return layer.msg('上传成功');
+                }else{
+                    return layer.msg(res.message);
+                }
+            },
+            error: function () {
+                return layer.msg('上传失败');
+            }
+        });
+    })
+    $(function (){
+        let article=[[${article}]];
+        if(article===null){
+            submitUrl='/article/addArticle';
+        }else{
+            $('#articleId').val(article.articleId);
+            $('#articleTitle').val(article.articleTitle);
+            $('#text').val(article.text);
+            $('#coverUrl').val(article.coverUrl);
+            imgUrl=article.coverUrl;
+            url=article.coverUrl;
+            $('#typeName').val(article.typeName);
+            $('#lookCover').css("display","inline");
+            console.log("article.reprintUrl");
+            console.log(article.reprintUrl);
+            if(article.reprintUrl===null || article.reprintUrl===''){
+                $("#reprintState").prop("checked", false);
+                $('#reprintDIV').css("display","none");
+                $('#reprintUrl').val(article.reprintUrl);
+            }else{
+                $("#reprintState").prop("checked", true);
+                $('#reprintDIV').css("display","inline");
+                $('#reprintUrl').val(article.reprintUrl);
+            }
+            $('#typeName').val(article.typeName);
+            submitUrl='/article/editArticle';
+        }
+        layui.form.render(); //重新渲染显示效果
+
+        //提交表单
+        $('#addForm').submit(function (e) {
+            let formData=new FormData(this);
+            data.articleId=formData.get("articleId");
+            data.articleTitle=formData.get("articleTitle");
+            data.text=formData.get("text");
+            data.typeName=formData.get("typeName");
+
+            if(formData.get("reprintState")===null){
+                data.reprintUrl=null;
+            }else{
+                data.reprintUrl=formData.get("reprintUrl");
+            }
+            if(url!=null){
+                data.coverUrl=url;
+            }else{
+                layer.msg("文章封面不能为空");
+                return false;
+            }
+            $.ajax({
+                type:"post",
+                url:submitUrl,
+                data:data,
+                success:function (res){
+                    if(res.code===200){
+                        layer.msg(res.message,{time:5000,icon:1,offset:[15]});
+                        let index=parent.layer.getFrameIndex(window.name);
+                        setTimeout(function (){
+                            window.parent.location.reload();//刷新父页面
+                            parent.layer.close(index);
+                        },1500);
+                    }else{
+                        layer.msg(res.message,{time:5000,icon:1,offset:[15]});
+                    }
+                },
+                error:function (error){
+                    layer.msg(error,{time:5000,icon:2,offset:[15]});
+                }
+            })
+            e.preventDefault();
+        });
+
+
+        //弹出课程封面
+        $("#lookCover").click(function () {
+            $('#coverImg').attr('src',imgUrl);
+            layer.open({
+                type: 1,
+                title: false,
+                closeBtn: 1,
+                area: ['auto'],
+                skin: 'layui-layer-nobg', //没有背景色
+                shadeClose: true,
+                content: $('#coverImg'),
+                end:function(){
+                    $('#coverImg').css("display","none");
+                }
+            });
+        });
+
+        let editor = editormd("test-editor", {
+            width: "100%",
+            height: "800px",
+            path: "static/lib/editormd/lib/",
+            emoji: true,
+            toolbarIcons: function () {  //自定义工具栏，后面有详细介绍
+                // return editormd.toolbarModes['full'];
+                return ["undo", "redo", "|", "bold", "del", "italic", "|", "list-ul", "list-ol", "hr", "|", "link", "table", "datetime", "watch", "fullscreen", "clear"];
+            }
+        });
+    });
+
+</script>
+</html>

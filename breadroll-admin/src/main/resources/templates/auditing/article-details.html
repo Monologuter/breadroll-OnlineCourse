@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="https://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="https://www.w3.org/1999/xhtml ">
+<head>
+    <meta charset="UTF-8">
+    <title>文章详细</title>
+    <base href="/">
+    <link rel="stylesheet" href="static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="static/css/public.css" media="all">
+    <link rel="stylesheet" href="static/css/typo.css" media="all">
+
+    <script src="static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+    <script src="static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+    <script src="static/lib/marked-master/marked.min.js"></script>
+</head>
+<style>
+    #operate {
+        display: none;
+    }
+    p>img{
+        display: block;
+        margin: auto;
+    }
+</style>
+<body>
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="table-search-fieldset">
+            <div class="course-box">
+                <h1 align="center" th:text="${article.articleTitle}"></h1>
+                <div id="content" class="typo"></div>
+            </div>
+        </fieldset>
+        <div style="margin:15px 10px">
+            <span><span>文章类别  : </span><span th:text="${article.typeName}"></span></span>
+        </div>
+        <div style="margin:15px 10px" th:if="${article.reprintUrl}!=null and ${article.reprintUrl}!=''">
+            转载链接 : <span th:text="${article.reprintUrl}"></span>
+        </div>
+        <div style="margin-top: 50px" id="operate" class="operate">
+            <button id="pass" type="button" class="layui-btn layui-btn-normal">审核通过</button>
+            <button id="refuse" type="button" class="layui-btn layui-btn-danger">审核拒绝</button>
+        </div>
+    </div>
+</div>
+
+
+</body>
+<script th:inline="javascript" type="text/javascript">
+    let article;
+    $(function () {
+        article = [[${article}]];
+        let auditState=[[${auditState}]];
+        console.log("文章")
+        console.log(auditState)
+        if (auditState === 0) {
+            $('#operate').css("display", "flex");
+        }
+
+        document.getElementById('content').innerHTML = marked(article.text);
+        $('#pass').click(function () {
+            layer.open({
+                type: 2,
+                shade: 0.7,
+                title: '审核通过',
+                area: ['650px', '400px'], //宽高
+                content: "/auditCause/goToPassAudit?auditType='articleAudit'&auditId=" + article.articleId
+            });
+        });
+        $('#refuse').click(function () {
+            layer.open({
+                type: 2,
+                shade: 0.7,
+                title: '审核拒绝',
+                area: ['650px', '400px'], //宽高
+                content: "/auditCause/goToRefuseAudit?auditType='articleAudit'&auditId=" + article.articleId
+            });
+        })
+    });
+</script>
+</html>

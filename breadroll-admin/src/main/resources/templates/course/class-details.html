@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>课程详情</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <base href="/">
+    <link rel="stylesheet" href="static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="static/css/public.css" media="all">
+    <script src="../static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+</head>
+<style>
+    body,html{
+        padding:0;
+        margin: 0;
+    }
+
+    .layuimini-container{
+        border: none;
+        border-radius: 0;
+    }
+
+    #player{
+        height: 650px;
+        width: 100%;
+        object-fit:fill;
+    }
+
+    .layuimini-main{
+        margin: 0!important;
+    }
+
+    .layuimini-container .table-search-fieldset{
+        margin: 0;
+        padding: 10px;
+        border: none;
+        background: #F9F9F9!important;
+    }
+
+    .course-box{
+        display: grid;
+        grid-template-columns: 1fr 400px;
+        max-width: 1400px;
+        margin: 0 auto;
+        background: #FFFFFF;
+        box-shadow: 0 2px 4px 0 #ededed;
+        border: solid 1px #f3f3f3;
+    }
+
+    .course-info{
+        position: relative;
+    }
+
+    .directoryDiv{
+        background-color: #FFFFFF;
+        overflow-y: auto;
+        height: 460px;
+    }
+    .directoryTitle{
+        background-color: #FFFFFF;
+        height: 80px;
+        padding: 17px 32px 0;
+        border-bottom: 1px solid #bfbfbf;
+    }
+    ul li{
+        list-style: none;
+        margin-top: 5px;
+        background:#FFFFFF;
+    }
+
+    .course-name{
+        font-size: 20px;
+        color: #333333;
+        margin-bottom: 12px;
+    }
+
+    .course-desc{
+        font-size: 15px;
+        color:#666666;
+    }
+
+    .split-line{
+        padding: 0 2px;
+    }
+
+    .play-link{
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        margin: auto 27px auto 32px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        color: #666666;
+        cursor: pointer;
+        min-height: 70px;
+        height: auto;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid #f9f9f9;
+        position: relative;
+        border-bottom: #9c9da0 dashed 1px;
+    }
+    .play-link:hover{
+        color: #0088f0;
+    }
+
+    .play-link>i{
+        color: #D1D1D1;
+        font-size: 25px
+    }
+
+    .course-list-title{
+        font-size: 16px;
+        position: absolute;
+        top: 10px;
+        left: 42px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        width: 230px;
+    }
+
+    .course-list-time{
+        position: absolute;
+        left: 46px;
+        top: 40px;
+        color: #000;
+        font-size: 13px;
+    }
+
+    .course-list-state{
+        position: absolute;
+        right: 20px;
+        top: 40px;
+        color: #000;
+        font-size: 13px;
+    }
+
+    .operate{
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: 75px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-top: 1px solid #bfbfbf;
+    }
+    .operate>button{
+        width: 150px;
+        margin: 0 15px;
+    }
+    .info-data{
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 400px;
+        grid-column-gap: 50px;
+        max-width: 1400px;
+        margin: 30px auto;
+        border: solid 1px #f3f3f3;
+    }
+    .course-data{
+        min-height: 300px;
+        padding: 20px 25px;
+        background: #FFFFFF;
+    }
+    .teacher-data{
+        min-height: 300px;
+        padding: 20px 25px;
+        background: #FFFFFF;
+    }
+
+    .info-data .title{
+        color: #0088f0;
+        font-size: 1.5rem;
+        font-weight: 500;
+        display: inline-block;
+        position: relative;
+        padding: 0 2px;
+        margin-bottom: 15px;
+    }
+
+    .info-data .title:after{
+        width: 100%;
+        height: 8px;
+        border-radius: 2px;
+        position: absolute;
+        left: 0;
+        content: '';
+        background-color: rgba(0, 136, 240, 0.1);
+        bottom: 0;
+    }
+    .teacher-box{
+        width: 100%;
+        height: fit-content;
+        margin-right: 22px;
+        border-radius: 12px;
+        box-shadow: 0 4px 9px 0 rgba(13,67,108,0.1);
+        background-color: #ffffff;
+        overflow: hidden;
+        min-width: 359px;
+    }
+    .header{
+        width: 100%;
+        height: 64px;
+        background: #D2E2FA;
+        display: flex;
+        align-items: center;
+        background-size: 100% 100%;
+        padding: 0 20px;
+    }
+
+    .teacher-info{
+        padding: 24px 24px 10px;
+    }
+    .teacher-info>p{
+        color: #2632388A;
+        font-size: 16px;
+        margin: 0 0 14px;
+    }
+    #operate{
+        display: none;
+    }
+</style>
+<body>
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="table-search-fieldset">
+            <div class="course-box">
+                <div style="min-width: 700px">
+                    <video id="player" controls></video>
+                </div>
+                <div class="course-info">
+                    <div class="directoryTitle">
+                        <h4 class="course-name"><span th:text="${course.courseName}"></span></h4>
+                        <h4 class="course-desc">
+                            共 <span th:text="${courseLists.size()}"></span> 节
+                            <span class="split-line">|</span>
+                            <span th:if="${course.vipState}">VIP课程</span>
+                            <span th:if="${!course.vipState}">免费课程</span>
+                            <span class="split-line">|</span>
+                            总时长 <span th:text="${totalTime}"></span>
+                        </h4>
+                    </div>
+                    <div class="directoryDiv">
+                        <ul>
+                            <li id="change" th:each="courseList : ${courseLists}" th:vsrc="${courseList.videoUrl}">
+                                <a class="play-link">
+                                    <i class="layui-icon layui-icon-play"></i>
+                                    <h4 class="course-list-title" th:text="${courseList.listName}"></h4>
+                                    <span class="course-list-time">
+                                        时长&nbsp;<span th:text="${courseList.timeMinute}"></span>
+                                        <span th:if="${courseList.timeSecond} lt 10">:0<span th:text="${courseList.timeSecond}"></span></span>
+                                        <span th:if="${courseList.timeSecond} ge 10">:<span th:text="${courseList.timeSecond}"></span></span>
+                                    </span>
+                                    <span class="course-list-state">
+                                        <span th:if="${courseList.lockState}">VIP观看</span>
+                                        <span th:if="${!courseList.lockState}">免费观看</span>
+                                    </span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div id="operate" class="operate">
+                        <button id="pass" type="button" class="layui-btn layui-btn-radius layui-btn-normal">审核通过</button>
+                        <button id="refuse" type="button" class="layui-btn layui-btn-radius layui-btn-danger">审核拒绝</button>
+                    </div>
+                </div>
+            </div>
+            <div class="info-data">
+                <div class="course-data">
+                    <h2 class="title">课程简介</h2>
+                    <p style="font-size: 16px;margin-bottom: 32px;" th:text="${course.description}"></p>
+                    <h2 class="title">课程类型</h2>
+                    <p style="font-size: 16px;margin-bottom: 32px;">线上课程、<span th:text="${course.typeName}"></span></p>
+                    <h2 class="title">发布时间</h2>
+                    <p style="font-size: 16px;margin-bottom: 32px;" th:text="${#dates.format(course.putTime, 'yyyy年MM月dd日')}"></p>
+                </div>
+                <div class="teacher-data">
+                    <h2 class="title">讲师简介</h2>
+                    <div class="teacher-box">
+                        <div class="header">
+                            <img style="height: 39px;width: 39px;margin-right: 15px;border-radius: 50%" class="avatar" th:src="${teacher.avatarUrl}" alt="讲师头像">
+                            <span style="font-size: 18px;color: #000000;" th:text="${teacher.teacherName}"></span>
+                        </div>
+                        <div class="teacher-info">
+                            <p th:text="${teacher.description}"></p>
+                            <p>联系方式&nbsp;<span th:text="${teacher.teacherPhone}"></span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+    </div>
+</div>
+<script src="static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+<script th:inline="javascript" type="text/javascript">
+    $(function (){
+        let firstVideo=[[${firstVideo}]];
+        let course=[[${course}]];
+        if ([[${operation}]]!==null && course.auditState===0){
+            $('#operate').css("display","flex");
+        }
+        if(course.auditState!==0){
+            $('#operate').css("display","none");
+        }
+        if([[${firstVideo}]]!==null){
+            $('#player').attr('src',firstVideo).attr('poster',course.coverUrl);
+            $('#change').children(".play-link").css("color", "#0088f0")
+                .find(".layui-icon-play").css("color", "#0088f0");
+        }
+        $("li").click(function (res){
+            $(".play-link").css("color", "#666666");
+            $(".play-link>i").css("color", "#D1D1D1");
+            $(this).children(".play-link").css("color", "#0088f0");
+            $(this).find(".layui-icon-play").css("color", "#0088f0");
+            $('#player').attr('src',res.currentTarget.getAttribute("vsrc"))
+                .attr('autoplay',"autoplay");
+            layui.form.render(); //重新渲染显示效果
+        });
+        $('#pass').click(function (){
+            layer.open({
+                type: 2,
+                shade: 0.7,
+                title: '审核通过',
+                area: ['650px', '400px'], //宽高
+                content: "/auditCause/goToPassAudit?auditType='courseAudit'&auditId="+course.courseId
+            });
+        });
+        $('#refuse').click(function (){
+            layer.open({
+                type: 2,
+                shade: 0.7,
+                title: '审核拒绝',
+                area: ['650px', '400px'], //宽高
+                content: "/auditCause/goToRefuseAudit?auditType='courseAudit'&auditId="+course.courseId
+            });
+        })
+    })
+</script>
+</body>
+</html>

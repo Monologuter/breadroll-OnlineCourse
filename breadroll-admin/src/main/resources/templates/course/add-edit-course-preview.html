@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>编辑课程预告</title>
+    <link rel="stylesheet" href="../static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="../static/css/public.css" media="all">
+    <script src="../static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+    <script src="../static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+</head>
+<style>
+    body{
+        background-color: white;
+    }
+    #subbtn{
+        margin-left: -110px;
+    }
+</style>
+<body>
+<div class="layui-form">
+    <form id="addForm" class="layui-form layui-form-pane">
+        <input type="hidden" id="previewId" name="previewId"/>
+        <div class="layui-form-item">
+            <div lay-filter="myDiv">
+                <label class="layui-form-label">课程名称</label>
+                <div class="layui-input-block">
+                    <input id="courseName" name="courseName" lay-verify="required" type="text" class="layui-input">
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item" lay-filter="myDiv">
+            <label class="layui-form-label">课程讲师</label>
+            <div class="layui-input-block">
+                <select id="teacherId" name="teacherId" lay-filter="mySelect" lay-verify="required">
+                    <option value="">请选择讲师</option>
+                    <option th:each="teacher : ${teachers}" th:value="${teacher.teacherId}" th:text="${teacher.teacherName}">张老师</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item" lay-filter="myDiv">
+            <label class="layui-form-label">开课时间</label>
+            <div class="layui-input-block">
+                <input type="text" id="startTime" lay-verify="required" name="startTime" class="layui-input">
+            </div>
+        </div>
+        <div lay-filter="myDiv" style="margin-bottom: 15px;">
+            <label class="layui-form-label">预计时长</label>
+            <div class="layui-input-block">
+                <input id="timeLength" title="单位：小时" name="timeLength" lay-verify="required" type="text" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text">
+            <label class="layui-form-label">课程介绍</label>
+            <div class="layui-input-block">
+                <textarea id="description" name="description" class="layui-textarea" lay-verify="required" cols="162" rows="6"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button id="subbtn" class="layui-btn layui-btn-normal" lay-submit lay-filter="saveBtn"></button>
+            </div>
+        </div>
+    </form>
+</div>
+<script th:inline="javascript">
+    let data={
+        previewId: null,
+        courseName: null,
+        description: null,
+        startTime: null,
+        timeLength: null,
+        teacherId:null,
+    }
+    layui.use(['upload', 'element', 'layer'], function() {
+        let $ = layui.jquery
+            laydate = layui.laydate;
+        //常规用法
+        laydate.render({
+            elem: '#startTime'
+        });
+
+    });
+    $(function (){
+         let coursePreview=[[${coursePreview}]];
+         let teacher=[[${teachers}]];
+
+        if(coursePreview===null){
+            submitUrl="/preview/addCoursePreview";
+            $('#subbtn').html("发布");
+        }else{
+            $('#subbtn').html("保存");
+            $('#previewId').val(coursePreview.previewId);
+            $('#courseName').val(coursePreview.courseName);
+            $('#teacherId').val(coursePreview.teacherId);
+            $('#startTime').val(coursePreview.startTime);
+            $('#timeLength').val(coursePreview.timeLength);
+            $('#description').val(coursePreview.description);
+            submitUrl="/preview/editCoursePreview";
+        }
+        layui.form.render(); //重新渲染显示效果
+
+
+        //提交表单
+        $('#addForm').submit(function (e) {
+            let formData=new FormData(this);
+            data.previewId=formData.get("previewId");
+            data.courseName=formData.get("courseName");
+            data.description=formData.get("description");
+            data.startTime=formData.get("startTime");
+            data.teacherId=formData.get("teacherId");
+            data.timeLength=formData.get("timeLength");
+            $.ajax({
+                type:"post",
+                url:submitUrl,
+                data:data,
+                success:function (res){
+                    if(res.code===200){
+                        layer.msg(res.message,{time:5000,icon:1,offset:[15]});
+                        let index=parent.layer.getFrameIndex(window.name);
+                        setTimeout(function (){
+                            window.parent.location.reload();//刷新父页面
+                            parent.layer.close(index);
+                        },1500);
+                    }else{
+                        layer.msg(res.message,{time:5000,icon:1,offset:[15]});
+                    }
+                },
+                error:function (error){
+                    layer.msg(error,{time:5000,icon:2,offset:[15]});
+                }
+            })
+            e.preventDefault();
+        });
+
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>公告管理</title>
+    <link rel="stylesheet" href="/static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="/static/css/public.css" media="all">
+    <script src="/static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+</head>
+<body>
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="table-search-fieldset">
+            <legend>搜索信息</legend>
+            <div id="searchForm" style="margin: 10px 10px 10px 10px">
+                <form class="layui-form layui-form-pane" action="">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">公告标题</label>
+                            <div class="layui-input-inline">
+                                <input type="text" name="title" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">发布日期</label>
+                            <div class="layui-input-inline">
+                                <input type="text" id="publishTime" name="publishTime" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-primary"  lay-submit lay-filter="search"><i class="layui-icon"></i> 搜 索</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-normal data-add-btn" lay-event="add"> 发布公告 </button>
+            </div>
+        </script>
+
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+
+        <script type="text/html" id="currentTableBar">
+            <a class="layui-btn layui-btn-normal layui-btn-sm data-count-edit" lay-event="edit">编辑</a>
+            <a class="layui-btn layui-btn-sm layui-btn-danger data-count-delete" lay-event="delete">删除</a>
+        </script>
+    </div>
+</div>
+</body>
+<script src="/static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+<script th:inline="none">
+    let documentWidth = $(document).width();
+    let myTable;
+    layui.use(['form', 'table','laydate'], function () {
+        let $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            laydate = layui.laydate;
+
+        //常规用法
+        laydate.render({
+            elem: '#publishTime'
+        });
+
+        myTable = table.render({
+            elem: '#currentTableId',
+            url: '/message/pageList',
+            method: "get",
+            toolbar: '#toolbarDemo',
+            parseData: function (res) {
+                return {
+                    "code": 0,
+                    "msg": res.message,
+                    "count": res.data.total,
+                    "data": res.data.list
+                }
+            },
+            defaultToolbar: ['filter', 'exports', 'print', {
+                title: '提示',
+                layEvent: 'LAYTABLE_TIPS',
+                icon: 'layui-icon-tips'
+            }],
+            cols: [[
+                {field: 'messageId', width: documentWidth*80/1000, title: '编号', sort: true, align: "center"},
+                {field: 'title', width: documentWidth*180/1000, title: '公告标题', align: "center"},
+                {field: 'content', width: documentWidth*280/1000, title: '公告内容'},
+                {field: 'publisher', width: documentWidth*100/1000, title: '发布人',sort: true, align: "center"},
+                {field: 'publishTime',width:documentWidth*150/1000,title: '发布时间', sort: true, align: "center"},
+                {title: '操作', toolbar: '#currentTableBar', align: "center"}
+            ]],
+            page: { //支持传入 laypage 组件的所有参数（某些参数除外，如：jump/elem） - 详见文档
+                layout: ['limit', 'count', 'prev', 'page', 'next', 'skip'] //自定义分页布局
+                , curr: 1 //设定初始在第 1 页
+                , limit: 10
+                , limits: [10, 15, 30, 60]
+                , groups: 5 //只显示 1 个连续页码
+                , first: true //不显示首页
+                , last: true //不显示尾页
+            },
+            request: {
+                pageName: "pageNum",
+                limitName: "pageSize"
+            },
+        });
+
+
+        //搜索
+        form.on('submit(search)', function(data){
+            console.log("搜索");
+            myTable.reload({
+                url:"/message/searchMessage",
+                method: "post",
+                page: {
+                    curr: 1 //设定初始在第 5 页
+                    ,limit: 10
+                },
+                request:{
+                    pageName:"pageNum",
+                    limitName: "pageSize"
+                },
+                where:{
+                    title:data.field.title,
+                    publishTime:data.field.publishTime
+                },
+            });
+            return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+        });
+
+
+        /**
+         * toolbar监听事件
+         */
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            if (obj.event === 'add') {  // 监听添加操作
+                let index = layer.open({
+                    title: '发布公告',
+                    type: 2,
+                    shade: 0.2,
+                    maxmin:true,
+                    shadeClose: true,
+                    area: ['100%', '100%'],
+                    content: '/message/goToEditMessage?messageId=0'
+                });
+                $(window).on("resize", function () {
+                    layer.full(index);
+                });
+            } else if (obj.event === 'delete') {  // 监听删除操作
+                let checkStatus = table.checkStatus('currentTableId'),
+                    data = checkStatus.data;
+                layer.alert(JSON.stringify(data));
+            }
+        });
+
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            let data = obj.data;
+            //编辑数据
+            if (obj.event === 'edit') {
+                let index = layer.open({
+                    title: '编辑公告',
+                    type: 2,
+                    shade: 0.2,
+                    maxmin: true,
+                    shadeClose: true,
+                    area: ['100%', '100%'],
+                    content: '/message/goToEditMessage?messageId=' + data.messageId
+                });
+                $(window).on("resize", function () {
+                    layer.full(index);
+                });
+                return false;
+                //删除数据
+            } else if (obj.event === 'delete') {
+                layer.confirm('真的删除《' + data.title + '》公告吗',{icon: 3}, function (index) {
+                    $.ajax({
+                        type: "get",
+                        url: '/message/deleteMessage',
+                        data: {messageId:data.messageId},
+                        success: function (res) {
+                            if (res.code === 200) {
+                                layer.msg(res.message, {time: 5000, icon: 1, offset: [15]});
+
+                            } else {
+                                layer.msg(res.message, {time: 5000, icon: 1, offset: [15]});
+                            }
+                        },
+                        error: function (error) {
+                            layer.msg(error, {time: 5000, icon: 2, offset: [15]})
+                        }
+                    })
+                    obj.del();
+                    layer.close(index);
+                });
+            }
+        });
+    });
+</script>
+</html>

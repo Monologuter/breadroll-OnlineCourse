@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>编辑讲师</title>
+    <link rel="stylesheet" href="../static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="../static/css/public.css" media="all">
+    <script src="/static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+    <script src="/static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+</head>
+<style>
+    body{
+        background-color: white;
+    }
+    #coverImg{
+        height: 350px;
+        width: 350px;
+        display: none;
+    }
+    #lookCover{
+        display: none;
+    }
+    #subbtn{
+        margin-left: -110px;
+    }
+</style>
+<body>
+<div class="layui-form">
+    <form id="addform" class="layui-form layui-form-pane">
+        <input type="hidden" id="teacherId" name="teacherId">
+        <div class="layui-form-item">
+            <div lay-filter="myDiv">
+                <label class="layui-form-label">讲师姓名</label>
+                <div class="layui-input-block">
+                    <input id="teacherName" name="teacherName" lay-verify="required" type="text" class="layui-input">
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div lay-filter="myDiv">
+                <label class="layui-form-label">讲师电话</label>
+                <div class="layui-input-block">
+                    <input id="teacherPhone" name="teacherPhone" lay-verify="required|phone" type="text" class="layui-input">
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div lay-filter="myDiv">
+                <label class="layui-form-label">身份证号</label>
+                <div class="layui-input-block">
+                    <input id="idCard" name="idCard" lay-verify="required|identity" type="text" class="layui-input">
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">性别</label>
+            <div class="layui-input-block">
+                <input type="radio" id="man"  name="teacherGender" value="男" title="男">
+                <input type="radio" id="woman" name="teacherGender" value="女" title="女">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">头像</label>
+            <div class="layui-upload">
+                <button type="button" class="layui-btn" id="uploadImg">上传头像</button>
+                <button type="button" class="layui-btn layui-btn-normal" id="lookCover">查看头像</button>
+                <img class="layui-upload-img"  id="coverImg" alt="课程封面" src="">
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text">
+            <label class="layui-form-label">讲师介绍</label>
+            <div class="layui-input-block">
+                <textarea id="description" name="description" class="layui-textarea" lay-verify="required" cols="162" rows="6"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn layui-btn-normal" id="subbtn" lay-submit lay-filter="saveBtn"></button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script th:inline="javascript" type="text/javascript">
+    let data={
+        teacherId: null,
+        teacherName: null,
+        teacherPhone: null,
+        idCard: null,
+        teacherGender: null,
+        avatarUrl: null,
+        description: null
+    };
+    let url=null;        //添加/修改讲师路径
+    let imgUrl;     //讲师头像路径
+    layui.use(['upload', 'element', 'layer'], function() {
+
+
+        let $ = layui.jquery
+            , upload = layui.upload
+            , layer = layui.layer;
+
+        //常规使用 - 普通图片上传
+        let uploadInst = upload.render({
+            elem: '#uploadImg',
+            url: '/upload/avatar', //改成您自己的上传接口
+            before: function (e) {
+                layer.msg('上传中', {icon: 16, time: 0});
+            },
+            done: function (res) {
+                //如果上传失败
+                if (res.code ===200) {
+                    url = res.data.url
+                    imgUrl = res.data.url
+                    $('#coverImg').attr('src', url); //图片链接
+                    $('#lookCover').css("display","inline");
+                    $('#lookCover').click();
+                    return layer.msg('上传成功');
+                }else{
+                    return layer.msg('上传失败');
+                }
+            },
+            error: function () {
+                return layer.msg('上传失败');
+            }
+        });
+    });
+    $(function () {
+        let teacher=[[${teacher}]];
+        if(teacher===null){
+            $('#subbtn').html("确认添加");
+            submitUrl="/teacher/addTeacher";
+        }else{
+            $('#teacherId').val(teacher.teacherId);
+            $('#teacherName').val(teacher.teacherName);
+            $('#teacherPhone').val(teacher.teacherPhone);
+            $('#idCard').val(teacher.idCard);
+            $('#description').val(teacher.description);
+            $('#subbtn').html("确认修改");
+            $('#lookCover').css("display","inline");
+            imgUrl=teacher.avatarUrl;
+            url=teacher.avatarUrl;
+            if(teacher.teacherGender==="女"){
+                $('#woman').prop("checked","checked");
+            }else {
+                $('#man').prop('checked','checked');
+            }
+            submitUrl="/teacher/editTeacher";
+        }
+
+        layui.form.render(); //重新渲染显示效果
+        //封装GetQueryString()方法来获取URL后面的value值
+        //弹出封面
+        $("#lookCover").click(function () {
+            $('#coverImg').attr('src',imgUrl);
+            layer.open({
+                type: 1,
+                title: false,
+                closeBtn: 1,
+                area: ['auto'],
+                skin: 'layui-layer-nobg', //没有背景色
+                shadeClose: true,
+                content: $('#coverImg'),
+                end:function(){
+                    $('#coverImg').css("display","none");
+                }
+            });
+        });
+        //提交表单
+        $('#addform').submit(function (e){
+            let formData=new FormData(this);
+            data.teacherId=formData.get("teacherId");
+            data.teacherName=formData.get("teacherName");
+            data.teacherPhone=formData.get("teacherPhone");
+            data.idCard=formData.get("idCard");
+            data.teacherGender=formData.get("teacherGender");
+            if(url===null){
+                layer.msg("头像不能为空");
+                return false;
+            }else{
+                data.avatarUrl=url;
+            }
+            data.description=formData.get("description");
+            $.ajax({
+                type:"post",
+                url:submitUrl,
+                data:data,
+                success:function (res){
+                    if(res.code===200){
+                        layer.msg(res.message,{time:5000,icon:1,offset:[15]});
+                        let index=parent.layer.getFrameIndex(window.name);
+                        setTimeout(function (){
+                            window.parent.location.reload();//刷新父页面
+                            parent.layer.close(index);
+                        },1500);
+                    }else{
+                        layer.msg(res.message,{time:5000,icon:1,offset:[15]});
+                    }
+                },
+                error:function (error){
+                    layer.msg(error,{time:5000,icon:2,offset:[15]})
+                }
+            })
+
+            e.preventDefault();
+        })
+
+    });
+</script>
+</body>
+</html>

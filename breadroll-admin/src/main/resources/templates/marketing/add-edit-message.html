@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>发布公告</title>
+    <base href="/">
+    <link rel="stylesheet" href="static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="static/css/public.css" media="all">
+    <link rel="stylesheet" href="static/lib/editormd/css/editormd.css" />
+    <script src="static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+    <script src="static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+    <script src="static/lib/editormd/editormd.min.js"></script>
+</head>
+<style>
+    #subbtn{
+        margin-left: -110px;
+    }
+    #courseUrlDIV{
+        display: none;
+    }
+    #articleUrlDIV{
+        display: none;
+    }
+    li{
+        list-style:auto;
+    }
+
+</style>
+<body>
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <div class="layui-form">
+            <form id="addForm" class="layui-form ayui-form-pane">
+                <input type="hidden" id="messageId" name="messageId"/>
+                <div class="layui-form-item" style="margin-top: 50px">
+                    <label class="layui-form-label" style="text-align: left;background-color:rgb(240,238,251)">公告标题</label>
+                    <div class="layui-input-block">
+                        <input id="title" name="title"  lay-verify="required" type="text" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text" >
+                    <label class="layui-form-label layui-input-inline" style="text-align: left;padding:9px 0; background-color:rgb(240,238,251);width: 100%"><span style="margin-left: 15px;">公告内容</span></label>
+                    <div id="test-editor" class="layui-input-block">
+                        <textarea id="content" name="content" style="display:none;"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div id="firstUrlDIV">
+                        <label class="layui-form-label" style="text-align: left;background-color:rgb(240,238,251)">公告链接</label>
+                        <div class="layui-input-inline">
+                            <select id="firstUrl" name="firstUrl" lay-filter="firstSelect">
+                                <option value="">请选择公告链接</option>
+                                <option value="#/courseDetail?id=">课程</option>
+                                <option value="#/memberDetails">VIP</option>
+                                <option value="#/articleDetail?id=">文章</option>
+                                <option value="#/learnMaterials">资料</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="courseUrlDIV">
+                        <label class="layui-form-label" style="text-align: left;background-color:rgb(240,238,251)">公告链接</label>
+                        <div class="layui-input-inline">
+                            <select id="courseUrl" name="courseUrl" lay-filter="courseUrl">
+                                <option value="">请选择相应课程</option>
+                                <option th:each="course : ${courses}" th:value="${course.courseId}" th:text="${course.courseName}"></option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="articleUrlDIV">
+                        <label class="layui-form-label" style="text-align: left;background-color:rgb(240,238,251)">公告链接</label>
+                        <div class="layui-input-inline">
+                            <select id="articleUrl" name="articleUrl" lay-filter="articleUrl">
+                                <option value="">请选择相应文章</option>
+                                <option th:each="article : ${articles}" th:value="${article.articleId}" th:text="${article.articleTitle}"></option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                        <button id="subbtn" class="layui-btn layui-btn-normal" lay-submit lay-filter="saveBtn"></button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+<script th:inline="javascript" type="text/javascript">
+    let data={
+        messageId:null,
+        title: null,
+        content:null,
+        url: null
+    }
+    let oneUrl='';          //第一个下拉框的链接
+    let twoUrl='';          //第二个下拉框对应的Id
+    layui.use(['form', 'element', 'layer'], function() {
+        let form=layui.form;
+        form.on('select(firstSelect)',function (data){
+            if(data.value==='#/courseDetail?id='){
+                oneUrl=data.value;
+                $('#courseUrlDIV').css("display","block");
+                $('#articleUrlDIV').css("display","none");
+
+            }else if(data.value==='#/articleDetail?id='){
+                oneUrl=data.value;
+                $('#articleUrlDIV').css("display","block");
+                $('#courseUrlDIV').css("display","none");
+
+            }else if(data.value==='#/learnMaterials'){
+                oneUrl=data.value;
+                twoUrl='';
+                $('#courseUrlDIV').css("display","none");
+                $('#articleUrlDIV').css("display","none");
+            }else{
+                oneUrl=data.value;
+                twoUrl='';
+                $('#courseUrlDIV').css("display","none");
+                $('#articleUrlDIV').css("display","none");
+
+            }
+        });
+        form.on('select(courseUrl)',function (data){
+            twoUrl=data.value;
+        });
+        form.on('select(articleUrl)',function (data){
+            twoUrl=data.value;
+        });
+
+        layui.form.render(); //重新渲染显示效果
+    });
+    $(function() {
+        let courses=[[${courses}]];
+        let articles=[[${articles}]];
+        let resourceLists=[[${resourceLists}]];
+        let message=[[${message}]];
+        oneUrl=[[${oneUrl}]];
+        twoUrl=[[${twoUrl}]];
+        let submitUrl;
+        if(message===null) {
+            $('#subbtn').html("发布");
+            submitUrl='/message/addMessage';
+        }else{
+            $('#messageId').val(message.messageId);
+            $('#title').val(message.title);
+            $('#content').val(message.content);
+            $('#firstUrl').val(oneUrl);
+            $('#subbtn').html("保存");
+            submitUrl='/message/editMessage';
+        }
+        if(oneUrl==="#/courseDetail?id="){
+            console.log("oneurl");
+            console.log(oneUrl);
+            console.log("twoUrl");
+            console.log(twoUrl);
+            $('#courseUrlDIV').css("display","block");
+            $('#courseUrl').val(twoUrl);
+        }else if(oneUrl==="#/articleDetail?id="){
+            $('#articleUrlDIV').css("display","block");
+            $('#articleUrl').val(twoUrl);
+        }
+        layui.form.render();
+
+        let editor = editormd("test-editor", {
+            width  : "100%",
+            height : "300px",
+            path   : "static/lib/editormd/lib/",
+            emoji: true,
+            toolbarIcons : function() {  //自定义工具栏，后面有详细介绍
+                // return editormd.toolbarModes['full'];
+                return ["undo","redo","|","bold","del","italic","|","list-ul","list-ol","hr","|","link","table","datetime","watch","fullscreen","clear"];
+            }
+        });
+
+        //提交表单
+        $('#addForm').submit(function (e) {
+            let formData=new FormData(this);
+            data.messageId=formData.get("messageId");
+            data.title=formData.get("title");
+            data.content=formData.get("content");
+            if (twoUrl!==''){
+                data.url=oneUrl+twoUrl;
+            }else{
+                data.url=oneUrl;
+            }
+            if((oneUrl===null||oneUrl==='')&&(twoUrl===null||twoUrl==='')){
+                data.url='';
+            }
+            $.ajax({
+                type:"post",
+                url:submitUrl,
+                data:data,
+                success:function (res){
+                    if(res.code===200){
+                        layer.msg(res.message,{time:5000,icon:1,offset:[15]});
+                        let index=parent.layer.getFrameIndex(window.name);
+                        setTimeout(function (){
+                            window.parent.location.reload();//刷新父页面
+                            parent.layer.close(index);
+                        },1500);
+                    }else{
+                        layer.msg(res.message,{time:5000,icon:1,offset:[15]});
+                    }
+                },
+                error:function (error){
+                    layer.msg(error,{time:5000,icon:2,offset:[15]});
+                }
+            })
+            e.preventDefault();
+        });
+
+    });
+</script>
+</html>

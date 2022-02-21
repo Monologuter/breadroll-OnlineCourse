@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>编辑资料</title>
+    <base href="/">
+    <link rel="stylesheet" href="../static/lib/layui-v2.6.3/css/layui.css" media="all">
+    <link rel="stylesheet" href="../static/css/public.css" media="all">
+    <script src="../static/lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+    <script src="../static/lib/layui-v2.6.3/layui.js" charset="utf-8"></script>
+</head>
+<style>
+    #subbtn{
+        margin-left: -110px;
+    }
+    #lookCover{
+        display: none;
+    }
+</style>
+<body>
+<div class="layui-form">
+    <form id="addform" class="layui-form layui-form-pane">
+        <input type="hidden" id="resourceId" name="resourceId"/>
+        <div class="layui-form-item">
+            <div lay-filter="myDiv" style="margin-top: 10px">
+                <label class="layui-form-label">资料名称</label>
+                <div class="layui-input-block">
+                    <input id="resourceName" name="resourceName" placeholder="资料名称" lay-verify="required" type="text" class="layui-input">
+                </div>
+            </div>
+            <div lay-filter="myDiv" style="margin-top: 10px">
+                <label class="layui-form-label">兑换数量</label>
+                <div class="layui-input-block">
+                    <input id="breadCoin" name="breadCoin" placeholder="下载资料所扣除的花卷币数量" lay-verify="required" type="text" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item" style="margin-top: 10px">
+                <label class="layui-form-label">资料文件</label>
+                <div class="layui-upload">
+                    <button type="button" class="layui-btn" id="uploadResource"><i class="layui-icon"></i>上传文件</button>
+                    <button type="button" class="layui-btn layui-btn-normal" id="lookCover">查看资料</button>
+                </div>
+            </div>
+            <div class="layui-form-item layui-form-text" style="margin-top: 10px">
+                <label class="layui-form-label">资料备注</label>
+                <div class="layui-input-block">
+                    <textarea id="remark" name="remark" class="layui-textarea" lay-verify="required" cols="162" rows="6"></textarea>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button id="subbtn" class="layui-btn layui-btn-normal" lay-submit lay-filter="saveBtn"></button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script th:inline="javascript" type="text/javascript">
+    let data={
+        resourceId: null,
+        resourceName: null,
+        breadCoin: null,
+        fileType:null,
+        fileSize: null,
+        fileUrl: null,
+        remark: null
+    }
+    let url=null;        //添加/修改封面路径
+    let imgUrl=null;     //讲师头像路径
+    let fileSize;        //文件大小
+    let fileType;        //文件类型
+    layui.use(['upload', 'element', 'layer'], function() {
+        let $ = layui.jquery
+            , upload = layui.upload
+            , layer = layui.layer;
+        //指定允许上传的文件类型
+        upload.render({
+            elem: '#uploadResource'
+            ,url: '/upload/material' //改成您自己的上传接口
+            ,accept: 'file', //普通文件
+            before: function(){
+                layer.msg('上传中',{icon:16,time:0});
+            }
+            ,done: function(res){
+                layer.msg('上传成功');
+                url = res.data.url
+                fileSize=res.data.size;
+                fileType=res.data.fileType;
+                $('#lookCover').css("display","inline");
+                console.log(res);
+            }
+        });
+    });
+
+    $(function (){
+        let resource=[[${resource}]];
+        if (resource===null){
+            $('#subbtn').html("确认添加");
+            submitUrl="/resource/addResource";
+        }else{
+            $('#resourceId').val(resource.resourceId);
+            $('#resourceName').val(resource.resourceName);
+            $('#breadCoin').val(resource.breadCoin);
+            $('#remark').val(resource.remark);
+            $('#subbtn').html("确认修改");
+            $('#lookCover').css("display","inline");
+            imgUrl=resource.fileUrl;
+            url=resource.fileUrl;
+            fileSize=resource.fileSize;
+            fileType=resource.fileType;
+            submitUrl="/resource/editResource";
+        }
+        layui.form.render(); //重新渲染显示效果
+
+        //提交表单
+        $('#addform').submit(function (e){
+            let formData=new FormData(this);
+            data.resourceId=formData.get("resourceId");
+            data.resourceName=formData.get("resourceName");
+            data.breadCoin=formData.get("breadCoin");
+            if(url===null){
+                layer.msg("请上传资料文件");
+                return false;
+            }else{
+
+                data.fileUrl=url;
+            }
+            data.remark=formData.get("remark");
+
+            data.fileSize=fileSize;
+            data.fileType=fileType;
+            $.ajax({
+                type:"post",
+                url:submitUrl,
+                data:data,
+                success:function (res){
+                    if(res.code===200){
+                        layer.msg(res.message,{time:5000,icon:1,offset:[15]});
+                        let index=parent.layer.getFrameIndex(window.name);
+                        setTimeout(function (){
+                            window.parent.location.reload();//刷新父页面
+                            parent.layer.close(index);
+                        },1500);
+                    }else{
+                        layer.msg(res.message,{time:5000,icon:1,offset:[15]});
+                    }
+                },
+                error:function (error){
+                    layer.msg(error,{time:5000,icon:2,offset:[15]})
+                }
+            })
+
+            e.preventDefault();
+        })
+
+        $('#lookCover').click(function (){
+            layer.msg('资料')
+            console.log(url);
+            layer.open({
+                type: 2,
+                area:['100%','100%'],
+                fixed: false,
+                maxmin: true,
+                content:'/upload/'+url
+            })
+        })
+
+
+
+    })
+</script>
+</body>
+</html>
